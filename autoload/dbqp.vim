@@ -16,7 +16,7 @@ function! s:HlQuery()
     call writefile(getreg('z', 1, 1), '/tmp/odbc-persist-dat')
 endfunction
 
-function! dbq#SendQuery()
+function! dbqp#SendQuery()
     call s:HlQuery()
 
     let result = system("odbcpersist-query < /tmp/odbc-persist-dat")
