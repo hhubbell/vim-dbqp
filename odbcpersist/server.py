@@ -44,8 +44,6 @@ def _format_result(header, rows):
 
         final.append(fmt)
     
-    print(final)
-
     return '\n'.join('|'.join(x for x in row) for row in final)
 
 def daemon():
