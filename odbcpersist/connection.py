@@ -10,7 +10,7 @@ def snowflake_connection(param_str):
     import snowflake.connector
 
     # FIXME
-    return snowflake.connector.connect(param_str)
+    return snowflake.connector.connect()
 
 def sqlite_connection(param_str):
     import sqlite3
