@@ -10,7 +10,7 @@ import sys
 import time
 
 
-DEFAULT_HOST = ''
+DEFAULT_HOST = 'localhost'
 DEFAULT_PORT = 6666
 
 def _connect():

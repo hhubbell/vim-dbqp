@@ -10,10 +10,9 @@ import select
 import socket
 import time
 from . import connection
-from .controller import recvall, build_dgram
+from .controller import recvall, build_dgram, DEFAULT_HOST, DEFAULT_PORT
 
-DEFAULT_HOST = ''
-DEFAULT_PORT = 6666
+
 DEFAULT_TTL = 900
 
 def _connect(dsn):
