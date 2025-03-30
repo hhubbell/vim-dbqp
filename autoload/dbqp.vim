@@ -1,3 +1,12 @@
+"
+"
+"
+
+
+" Manage connection state
+let s:dbqp_connected = 0
+
+"
 function! s:HlQuery()
     " Move to nearest blank line
     while getline('.') =~ '\S' && line('.') > 1
@@ -11,67 +20,97 @@ function! s:HlQuery()
         normal! j
     endwhile
 
+    " Write selected text to temp file
     silent! normal! "zy
-
     call writefile(getreg('z', 1, 1), '/tmp/odbc-persist-dat')
 endfunction
 
+" Manage creating or setting focus on the result buffer
+" Param: bname buffer name
+function! s:CreateOrFocusBuffer(bname)
+    let l:buf = bufnr(a:bname)
 
-function! dbqp#SendQuery()
-    call s:HlQuery()
-
-    let cmd = ['odbcpersist-query', '/tmp/odbc-persist-dat']
-
-    let s:cur_win = win_getid()
-
-    let s:bname = 'Scratch'
-    let s:buf = bufnr(s:bname)
-
-    if s:buf == -1
-        exe 'split ' . s:bname
+    if l:buf == -1
+        exe 'split ' . a:bname
 
         setlocal buftype=nofile
         setlocal bufhidden=wipe
         setlocal noswapfile
-
     else
-        let res_win = bufwinnr(s:buf)
-        if res_win != -1
-            execute res_win . 'wincmd w'
+        let l:res_win = bufwinnr(l:buf)
+
+        if l:res_win != -1
+            execute l:res_win . 'wincmd w'
         else 
-            execute 'sbuffer ' . s:buf
+            execute 'sbuffer ' . l:buf
         endif
 
-        silent! call deletebufline(s:bname, 1, '$')
+        silent! call deletebufline(a:bname, 1, '$')
+    endif
+endfunction
+
+" Interactively send a query based on the user's cursor
+function! dbqp#SendQuery()
+    if s:dbqp_connected == 0
+        echohl ErrorMsg | echo "No database connected!" | echohl None
+        return 0
     endif
 
-    call appendbufline(s:bname, 0, 'Executing Query...')
+    call s:HlQuery()
 
+    let s:cur_win = win_getid()
+
+    let s:bname = '-- dbqp --'
+    call s:CreateOrFocusBuffer(s:bname)
+
+    " FIXME: Not 100% sure echow is what I want to use
+    echow 'Executing Query...'
+
+    " Callback: HandleQuery
+    "   Handles writing query results to the new or exsiting query result
+    "   buffer
     function! s:HandleQuery(ch, msg)
-        " Clear out any messages in the buffer
-        "call deletebufline(s:bname, 1)
-        "call appendbufline(s:bname, 1, 'Execution Complete.')
-
-        call appendbufline(s:bname, '$', a:msg)
-        
-        " FIXME: appendbufline starts at line 2 because line 1 exists but is
-        " blank. So we delete the empty line 1
-        "call deletebufline(s:bname, 1)
+        call appendbufline(s:bname, line('$') - 1, a:msg)
     endfunction
 
+    " Callbakc: HandleQueryEnd
+    "   Handles cleanup related to complete query commands
     function! s:HandleQueryEnd(ch, e_code)
-        call deletebufline(s:bname, 1)
-        call appendbufline(s:bname, 0, 'Execution Complete.')
+        normal! 0gg
 
         if s:cur_win != win_getid() && s:cur_win > 0
             call win_gotoid(s:cur_win)
         endif
+
+        echow 'Execution Complete.'
     endfunction
 
+    let l:cmd = ["odbcpersist-query", "/tmp/odbc-persist-dat"]
     call job_start(cmd, {
         \ 'out_cb': function('s:HandleQuery'),
         \ 'exit_cb': function('s:HandleQueryEnd')
         \ })
-
 endfunction
 
+" Open a persistent connection to a SQL database
+" Param: dsn connection string
+function! dbqp#Connect(dsn)
+    function! s:HandleConnectErr(ch, msg)
+        let s:dbqp_connected = 0
+        echohl ErrorMsg | echo a:msg | echohl None
+    endfunction
+
+    function! s:HandleDisconnect(ch, msg)
+        let s:dbqp_connected = 0
+        echohl ErrorMsg | echo "Disconnected." | echohl None
+    endfunction
+
+    let l:cmd = ["odbcpersist-start", "-c", a:dsn]
+    call job_start(cmd, {
+        \ 'stoponexit': 'term',
+        \ 'err_cb': function('s:HandleConnectErr'),
+        \ 'exit_cb': function('s:HandleDisconnect')
+        \ })
+
+    let s:dbqp_connected = 1
+endfunction
