@@ -4,7 +4,7 @@
 
 
 " Manage connection state
-let s:dbqp_connected = 0
+let g:dbqp_connected = 0
 
 " Define query execution SignColumn indicator
 exe "sign define dbqp_exec numhl=SignColumn texthl=SignColumn text=>>"
@@ -13,6 +13,7 @@ exe "sign define dbqp_exec numhl=SignColumn texthl=SignColumn text=>>"
 " Mark a query for execution by searching for the start and end of the query,
 " and writing the contents of this selection to a temporary file. Mark this
 " range by placing a 'sign' indicating the currently running query.
+" FIXME: Currently, we mark the blank line as part of the selection.
 " Return: int last line of selection
 function! s:HlQuery()
     " Move to nearest blank line
@@ -52,6 +53,7 @@ function! s:FocusBuffer(bname)
     let l:res_win = bufwinnr(l:buf)
 
     if l:res_win != -1
+        " FIXME: Does this always work if more than one split exists?
         exe l:res_win . 'wincmd w'
     else
         exe 'sbuffer ' . l:buf
@@ -78,7 +80,7 @@ endfunction
 
 " Interactively send a query based on the user's cursor
 function! dbqp#SendQuery()
-    if s:dbqp_connected == 0
+    if g:dbqp_connected == 0
         echohl ErrorMsg | echo "No database connected!" | echohl None
         return 0
     endif
@@ -132,6 +134,7 @@ function! dbqp#SendQuery()
     let l:cmd = ["odbcpersist-query", "/tmp/odbc-persist-dat"]
     call job_start(cmd, {
         \ 'out_cb': function('s:HandleQuerySuccess'),
+        \ 'err_cb': function('s:HandleQueryError'),
         \ 'exit_cb': function('s:HandleQueryEnd')
         \ })
 endfunction
@@ -142,14 +145,14 @@ function! dbqp#Connect(dsn)
     " Callback: HandleConnectErr
     "   Report an error message on connection failure
     function! s:HandleConnectErr(ch, msg)
-        let s:dbqp_connected = 0
+        let g:dbqp_connected = 0
         echohl ErrorMsg | echo a:msg | echohl None
     endfunction
 
     " Callback: HandleDisconnect
     "   Report an error message on connection closure
     function! s:HandleDisconnect(ch, msg)
-        let s:dbqp_connected = 0
+        let g:dbqp_connected = 0
         echohl ErrorMsg | echo "Disconnected." | echohl None
     endfunction
 
@@ -160,5 +163,5 @@ function! dbqp#Connect(dsn)
         \ 'exit_cb': function('s:HandleDisconnect')
         \ })
 
-    let s:dbqp_connected = 1
+    let g:dbqp_connected = 1
 endfunction

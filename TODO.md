@@ -3,4 +3,5 @@
 - [ ] Better handling of query scope
 - [ ] Apply page limit? `sqlglot`?
 - [ ] Prettier printing
-- [ ] Vim indicator of running query. (SignColumn?)
+- [x] Vim indicator of running query. (SignColumn?)
+- [x] Report query success vs. failure

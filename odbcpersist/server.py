@@ -86,25 +86,27 @@ def start_daemon(conn_str, ttl):
 
         if r:
             co, adr = sock.accept()
-            payload = recvall(co)
+            _, payload = recvall(co)
 
             if payload == b"CMD::pid":
-                co.send(build_dgram(str(os.getpid())))
+                co.send(build_dgram(1, str(os.getpid())))
 
             if payload == b"CMD::ttl":
                 rem = kill - now
-                co.send(build_dgram(f"alive for {math.floor(rem / 60)}:{math.floor(rem % 60)} minutes"))
+                co.send(build_dgram(1, f"alive for {math.floor(rem / 60)}:{math.floor(rem % 60)} minutes"))
             else:
                 try:
                     cur.execute(payload.decode("utf-8"))
                     data = cur.fetchall()
                     head = [x[0] for x in cur.description]
                     res = _format_result(head, data)
+                    flg = 1
 
                 except Exception as e:
                     res = e
+                    flg = 0
 
-                co.send(build_dgram(str(res)))
+                co.send(build_dgram(flg, str(res)))
 
             # Any time we receive a command, keep alive for another ttl window
             kill = now + ttl

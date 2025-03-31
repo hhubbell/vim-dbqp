@@ -19,16 +19,16 @@ def _connect():
         sock.connect((DEFAULT_HOST, DEFAULT_PORT))
 
     except ConnectionRefusedError as e:
-        print(f"{e} - likely no odbcpersist-daemon running")
+        print(f"{e} - likely no odbcpersist-daemon running", file=sys.stderr)
         quit()
 
     return sock
 
-def build_dgram(msg):
+def build_dgram(cmd_stat, msg):
     b_msg = msg.encode("utf-8")
     m_len = len(b_msg)
 
-    header = f"{m_len:06}\r\n\r\n".encode("utf-8")
+    header = f"{cmd_stat}{m_len:06}\r\n\r\n".encode("utf-8")
 
     return header + b_msg
 
@@ -37,40 +37,50 @@ def recvall(sock):
     chunks = []
     total = 0
 
-    # Read the first 10 bytes to determine message len. The
-    # datagram is formatted [ 0 0 0 0 0 0 \r \n \r \n ]
-    rec = sock.recv(10)
+    # Read the first 11 bytes to determine message len. The
+    # datagram is formatted [ F 0 0 0 0 0 0 \r \n \r \n ]
+    rec = sock.recv(11)
 
-    if rec[6:10] != b'\r\n\r\n':
+    if rec[7:11] != b'\r\n\r\n':
         raise Exception("Malformed message")
 
-    msg_len = int(rec[0:6])
+    msg_flg = int(rec[0:1])
+    msg_len = int(rec[1:7])
 
     while total < msg_len:
         rec = sock.recv(min(msg_len - total, bufsize))
         chunks.append(rec)
         total += len(rec)
 
-    return b''.join(chunks)
+    return (msg_flg, b''.join(chunks))
 
 def get_pid():
     sock = _connect()
-    sock.send(build_dgram("CMD::pid"))
+    sock.send(build_dgram(1, "CMD::pid"))
 
     return recvall(sock)
 
 def get_ttl():
     sock = _connect()
-    sock.send(build_dgram("CMD::ttl"))
+    sock.send(build_dgram(1, "CMD::ttl"))
 
     return recvall(sock)
 
 def kill():
-    pid = int(get_pid())
-    os.kill(pid, signal.SIGTERM)
+    flg, pid = get_pid()
+
+    if flg:
+        os.kill(int(pid), signal.SIGTERM)
+    else:
+        raise Exception("Request for pid failed.")
 
 def ttl():
-    print(get_ttl().decode("utf-8"))
+    flg, ttl = get_ttl()
+
+    if flg:
+        print(ttl.decode("utf-8"))
+    else:
+        raise Exception("Request for ttl failed.")
 
 def query():
     parser = argparse.ArgumentParser()
@@ -85,11 +95,16 @@ def query():
 
 def send_query(query):
     sock = _connect()
-    sock.send(build_dgram(query))
+    sock.send(build_dgram(1, query))
 
-    res = recvall(sock)
+    flg, res = recvall(sock)
 
-    print(res.decode('utf-8'))
+    if flg:
+        outpipe = sys.stdout
+    else:
+        outpipe = sys.stderr
+
+    print(res.decode('utf-8'), file=outpipe)
 
 if __name__ == '__main__':
     query()
