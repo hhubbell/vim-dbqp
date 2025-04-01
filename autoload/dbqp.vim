@@ -20,9 +20,25 @@ sign define dbqp_exec numhl=SignColumn texthl=SignColumn text=>>
 " FIXME: Currently, we mark the blank line as part of the selection.
 " Return: int last line of selection
 function! s:HlQuery()
-    " Move to nearest blank line
-    while getline('.') =~ '\S' && line('.') > 1
+    " If we started on the semicolon, move up one line
+    if getline('.') =~ ';'
         normal! k
+    endif
+
+    " Move up to the nearest semicolon
+    while getline('.') !~ ';' && line('.') > 1
+        normal! k
+    endwhile
+
+    " If we landed on the semicolon, move down one line. Otherwise, we're
+    " likely at line 1, so we can start from there.
+    if getline('.') =~ ';'
+        normal! j
+    endif
+
+    " Continue moving down to the nearest non-blank line
+    while getline('.') !~ '\S' && line('.') < line('$')
+        normal! j
     endwhile
 
     let l:c_line = line('.')
