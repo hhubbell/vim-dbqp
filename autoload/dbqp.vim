@@ -142,6 +142,12 @@ endfunction
 " Open a persistent connection to a SQL database
 " Param: dsn connection string
 function! dbqp#Connect(dsn)
+    " Callback: HandleConnectMsg
+    "   Display any messages that the daemon sends throught stdout
+    function! s:HandleConnectMsg(ch, msg)
+        echohl MoreMsg | echo a:msg | echohl None
+    endfunction
+
     " Callback: HandleConnectErr
     "   Report an error message on connection failure
     function! s:HandleConnectErr(ch, msg)
@@ -159,6 +165,7 @@ function! dbqp#Connect(dsn)
     let l:cmd = ["odbcpersist-start", "-c", a:dsn]
     call job_start(cmd, {
         \ 'stoponexit': 'term',
+        \ 'out_cb': function('s:HandleConnectMsg'),
         \ 'err_cb': function('s:HandleConnectErr'),
         \ 'exit_cb': function('s:HandleDisconnect')
         \ })
