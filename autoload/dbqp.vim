@@ -1,5 +1,9 @@
+" vim-dbqp
 "
+" Vim Database Query Persist/Database Query Plugin
 "
+" Start and maintain connections to databases. Send queries interactively and
+" print the results to a new buffer.
 "
 
 
@@ -7,7 +11,7 @@
 let g:dbqp_connected = 0
 
 " Define query execution SignColumn indicator
-exe "sign define dbqp_exec numhl=SignColumn texthl=SignColumn text=>>"
+sign define dbqp_exec numhl=SignColumn texthl=SignColumn text=>>
 
 
 " Mark a query for execution by searching for the start and end of the query,
@@ -97,23 +101,21 @@ function! dbqp#SendQuery()
     redraw | echohl Normal | echo 'Executing Query...' | echohl None
 
     " Callback: HandleQuerySuccess
-    "   Handles writing query results to the new or existing query result
-    "   buffer
+    " Handles writing query results to the new or existing query result buffer
     function! s:HandleQuerySuccess(ch, msg)
         call appendbufline(s:bname, line('$') - 1, a:msg)
         let s:query_success = 1
     endfunction
 
     " Callback: HanderQueryError
-    "   Handles writing error messages to the new or existing query result
-    "   buffer
+    " Handles writing error messages to the new or existing query result buffer
     function! s:HandleQueryError(ch, msg)
         call appendbufline(s:bname, line('$') - 1, a:msg)
         let s:query_success = 0
     endfunction
 
     " Callback: HandleQueryEnd
-    "   Handles cleanup related to complete query commands
+    " Handles cleanup related to complete query commands
     function! s:HandleQueryEnd(ch, e_code)
         normal! 0gg
 
@@ -143,20 +145,20 @@ endfunction
 " Param: dsn connection string
 function! dbqp#Connect(dsn)
     " Callback: HandleConnectMsg
-    "   Display any messages that the daemon sends throught stdout
+    " Display any messages that the daemon sends throught stdout
     function! s:HandleConnectMsg(ch, msg)
         echohl MoreMsg | echo a:msg | echohl None
     endfunction
 
     " Callback: HandleConnectErr
-    "   Report an error message on connection failure
+    " Report an error message on connection failure
     function! s:HandleConnectErr(ch, msg)
         let g:dbqp_connected = 0
         echohl ErrorMsg | echo a:msg | echohl None
     endfunction
 
     " Callback: HandleDisconnect
-    "   Report an error message on connection closure
+    " Report an error message on connection closure
     function! s:HandleDisconnect(ch, msg)
         let g:dbqp_connected = 0
         echohl ErrorMsg | echo "Disconnected." | echohl None
