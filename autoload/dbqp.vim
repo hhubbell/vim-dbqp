@@ -141,7 +141,9 @@ function! dbqp#SendQuery()
     function! s:HandleQueryEnd(ch, e_code)
         " Reposition to the first row and apply syntax highlighting
         normal! 0gg
-        call s:SynResults()
+        if s:query_success != 0
+            call s:SynResults()
+        endif
 
         if s:cur_win != win_getid() && s:cur_win > 0
             call win_gotoid(s:cur_win)
