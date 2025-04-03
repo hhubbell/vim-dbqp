@@ -30,9 +30,11 @@ def _format_result(header, rows):
     final = []
     final.append(header)
 
+    widths = [1 for _ in header]
+
     for row in rows:
         fmt = []
-        for val in row:
+        for i, val in enumerate(row):
             if isinstance(val, bytes):
                 val = val.decode('utf-8')
             elif isinstance(val, datetime.datetime):
@@ -42,9 +44,11 @@ def _format_result(header, rows):
 
             fmt.append(val)
 
+            widths[i] = max(widths[i], len(val))
+
         final.append(fmt)
     
-    return '\n'.join('|'.join(x for x in row) for row in final)
+    return '\n'.join('|'.join(f"{x:<{i + 1}}" for i, x in zip(widths, row)) for row in final)
 
 def daemon():
     parser = argparse.ArgumentParser()
