@@ -1,4 +1,4 @@
-# Vim Database Query Persist
+# Vim Database Query Plugin
 
 Interactively send queries to a database using a persistent ODBC connection.
 
@@ -15,6 +15,14 @@ Copy `dbqp.vim` to `~/.vim/autoload`.
 
 ```bash
 cp autoload/dbqp.vim ~/.vim/autoload/
+```
+
+## Connecting
+
+Initialize a database connection by calling `Connect`. Currently, snowflake, duckdb, and sqlite connections are supported. These connections require the appropriate driver library to be installed. Use the database type as the protocol indicator as the parameter passed to connect.
+
+```
+:call dbqp#Connect('duckdb://path_to_db.db')
 ```
 
 ## Usage

@@ -141,6 +141,7 @@ function! dbqp#SendQuery()
     function! s:HandleQueryEnd(ch, e_code)
         " Reposition to the first row and apply syntax highlighting
         normal! 0gg
+        set nowrap
         if s:query_success != 0
             call s:SynResults()
         endif

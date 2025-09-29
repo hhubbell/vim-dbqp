@@ -48,7 +48,7 @@ def _format_result(header, rows):
 
         final.append(fmt)
     
-    return '\n'.join('|'.join(f"{x:<{i + 1}}" for i, x in zip(widths, row)) for row in final)
+    return '\n'.join('\u2502'.join(f"{x:<{i + 1}}" for i, x in zip(widths, row)) for row in final)
 
 def daemon():
     parser = argparse.ArgumentParser()
