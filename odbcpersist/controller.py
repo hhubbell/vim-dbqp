@@ -104,7 +104,8 @@ def send_query(query):
     else:
         outpipe = sys.stderr
 
-    print(res.decode('utf-8'), file=outpipe)
+    outpipe.reconfigure(encoding="utf-8")
+    outpipe.write(res.decode("utf-8"))
 
 if __name__ == '__main__':
     query()
