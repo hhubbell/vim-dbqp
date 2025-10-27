@@ -99,6 +99,7 @@ function! s:CreateOrFocusBuffer(bname)
         setlocal buftype=nofile
         setlocal bufhidden=wipe
         setlocal noswapfile
+        setlocal encoding=utf-8
     else
         call s:FocusBuffer(a:bname)
     endif
