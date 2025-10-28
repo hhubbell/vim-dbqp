@@ -175,21 +175,29 @@ function! dbqp#Connect(dsn)
     " Callback: HandleConnectMsg
     " Display any messages that the daemon sends throught stdout
     function! s:HandleConnectMsg(ch, msg)
-        echohl MoreMsg | echo a:msg | echohl None
+        echohl MoreMsg | echomsg a:msg | echohl None
     endfunction
 
     " Callback: HandleConnectErr
     " Report an error message on connection failure
     function! s:HandleConnectErr(ch, msg)
         let g:dbqp_connected = 0
-        echohl ErrorMsg | echo a:msg | echohl None
+        echohl ErrorMsg | echomsg a:msg | echohl None
     endfunction
 
     " Callback: HandleDisconnect
     " Report an error message on connection closure
     function! s:HandleDisconnect(ch, msg)
         let g:dbqp_connected = 0
-        echohl ErrorMsg | echo "Disconnected." | echohl None
+
+        " The command odbcpersist-start will return an error message and the
+        " error code (6) on script errors. The err_cb will get the stderr,
+        " while exit_cb will get the exit code. If we reported an error, we
+        " don't want to overwrite the error message. So, if the message is only
+        " "6", skip printing anything.
+        if a:msg != "6"
+            echohl ErrorMsg | echomsg "Disconnected." | echohl None
+        endif
     endfunction
 
     let l:cmd = ["odbcpersist-start", "-c", a:dsn]

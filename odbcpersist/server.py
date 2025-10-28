@@ -8,6 +8,7 @@ import math
 import os
 import select
 import socket
+import sys
 import time
 from . import connection
 from .controller import recvall, build_dgram, DEFAULT_HOST, DEFAULT_PORT
@@ -19,9 +20,20 @@ def _connect(dsn):
     """
     Expects format database://key=value;key=value
     """
-    dbm, params = dsn.split("://")
+    return connection.connect(dsn)
 
-    return getattr(connection, dbm + "_connection")(params)
+def _to_str(anytype):
+    """
+    Convert anytype to str
+    """
+    if isinstance(anytype, bytes):
+        val = anytype.decode("utf-8")
+    elif isinstance(anytype, datetime.datetime):
+        val = str(anytype)
+    else:
+        val = str(anytype)
+
+    return val
 
 def _format_result(header, rows):
     """
@@ -30,17 +42,12 @@ def _format_result(header, rows):
     final = []
     final.append(header)
 
-    widths = [1 for _ in header]
+    widths = [len(_to_str(x)) for x in header]
 
     for row in rows:
         fmt = []
         for i, val in enumerate(row):
-            if isinstance(val, bytes):
-                val = val.decode('utf-8')
-            elif isinstance(val, datetime.datetime):
-                val = str(val)
-            else:
-                val = str(val)
+            val = _to_str(val)
 
             fmt.append(val)
 
@@ -65,10 +72,10 @@ def daemon():
 
     try:
         start_daemon(args.conn, ttl, args.quiet)
-    except OSError as e:
+    except Exception as e:
         # Print just the error not the full traceback when running as a cli
-        print(e)
-        quit()
+        print(f"{type(e).__name__}: {e}", file=sys.stderr, flush=True)
+        quit(6)
 
 def start_daemon(conn_str, ttl, quiet=False):
     # NOTE: Most of the time, Python docs recommend disposing of cursors
